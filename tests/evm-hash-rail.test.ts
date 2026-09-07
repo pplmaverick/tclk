@@ -115,7 +115,7 @@ const RAIL_TX_HASH = ("0x" + "aa".repeat(32)) as `0x${string}`;
 
 type MockRpcCall = { method: string; params?: unknown[] };
 
-function makeMockProvider(onSend: (tx: Record<string, unknown>) => `0x${string}`) {
+function makeMockProvider(onSend: (tx: Record<string, unknown>) => `0x${string}`, receiptStatus: "0x0" | "0x1" = "0x1") {
   const calls: MockRpcCall[] = [];
   const provider = {
     async request({ method, params }: { method: string; params?: unknown[] }): Promise<unknown> {
@@ -127,7 +127,7 @@ function makeMockProvider(onSend: (tx: Record<string, unknown>) => `0x${string}`
           return onSend(params![0] as Record<string, unknown>);
         case "eth_getTransactionReceipt":
           return {
-            status: "0x1",
+            status: receiptStatus,
             transactionHash: RAIL_TX_HASH,
             blockHash: "0x" + "11".repeat(32),
             blockNumber: "0x1",
@@ -247,6 +247,42 @@ describe("EvmHashRail.refund", () => {
     const { provider } = revertProvider("EvmHashRail: refund not yet available");
     await expect(railOn(provider).refund(terms.statement)).rejects.toThrow(
       'tclk: The contract function "refund" reverted with the following reason:\nEvmHashRail: refund not yet available',
+    );
+  });
+});
+
+/**
+ * A transaction can be successfully mined (no RPC error, no thrown revert at send time) and
+ * still have failed on-chain — e.g. it ran out of gas mid-execution, or reverted in a way the
+ * node doesn't surface as an `eth_sendTransaction`-time error. `eth_getTransactionReceipt`
+ * then answers with a full receipt whose `status` is `"0x0"`. Before this fix, none of
+ * lock/claim/refund looked at that field, so a mined-but-reverted transaction would resolve
+ * as if it had succeeded. See bdunn77's report.
+ */
+function minedButRevertedProvider() {
+  return makeMockProvider(() => RAIL_TX_HASH, "0x0");
+}
+
+describe("EvmHashRail — mined but reverted transactions", () => {
+  it("lock() rejects when the receipt status is reverted, not just when the send itself throws", async () => {
+    const { provider } = minedButRevertedProvider();
+    await expect(railOn(provider).lock(terms)).rejects.toThrow(
+      `tclk: EvmHashRail: lock transaction mined but reverted on-chain (hash: ${RAIL_TX_HASH})`,
+    );
+  });
+
+  it("claim() rejects when the receipt status is reverted, not just when the send itself throws", async () => {
+    const { provider } = minedButRevertedProvider();
+    const secret = "0x" + "cd".repeat(32);
+    await expect(railOn(provider).claim(terms.statement, secret)).rejects.toThrow(
+      `tclk: EvmHashRail: claim transaction mined but reverted on-chain (hash: ${RAIL_TX_HASH})`,
+    );
+  });
+
+  it("refund() rejects when the receipt status is reverted, not just when the send itself throws", async () => {
+    const { provider } = minedButRevertedProvider();
+    await expect(railOn(provider).refund(terms.statement)).rejects.toThrow(
+      `tclk: EvmHashRail: refund transaction mined but reverted on-chain (hash: ${RAIL_TX_HASH})`,
     );
   });
 });

@@ -138,7 +138,10 @@ export class EvmHashRail implements SettlementRail {
         functionName: "lock",
         args: [hashLock, payee, BigInt(terms.amount), token, BigInt(terms.claimByMs), BigInt(terms.refundAfterMs)],
       });
-      await this.publicClient.waitForTransactionReceipt({ hash });
+      const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
+      if (receipt.status !== "success") {
+        throw new Error(`EvmHashRail: lock transaction mined but reverted on-chain (hash: ${hash})`);
+      }
     } catch (err) {
       throw new Error(`tclk: ${extractRevertReason(err)}`);
     }
@@ -179,7 +182,10 @@ export class EvmHashRail implements SettlementRail {
         functionName: "claim",
         args: [ref as Hex, secret as Hex],
       });
-      await this.publicClient.waitForTransactionReceipt({ hash });
+      const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
+      if (receipt.status !== "success") {
+        throw new Error(`EvmHashRail: claim transaction mined but reverted on-chain (hash: ${hash})`);
+      }
     } catch (err) {
       throw new Error(`tclk: ${extractRevertReason(err)}`);
     }
@@ -193,7 +199,10 @@ export class EvmHashRail implements SettlementRail {
         functionName: "refund",
         args: [ref as Hex],
       });
-      await this.publicClient.waitForTransactionReceipt({ hash });
+      const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
+      if (receipt.status !== "success") {
+        throw new Error(`EvmHashRail: refund transaction mined but reverted on-chain (hash: ${hash})`);
+      }
     } catch (err) {
       throw new Error(`tclk: ${extractRevertReason(err)}`);
     }
