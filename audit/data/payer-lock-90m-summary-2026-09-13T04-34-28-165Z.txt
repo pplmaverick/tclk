@@ -1,0 +1,19 @@
+generated_at: 2026-09-13T04:34:28.168Z
+export: board-live-window-90m.jsonl
+room: tclk-offers
+window: 2026-09-13T03:03:34.903707Z .. 2026-09-13T04:33:50.450529Z  (24256 raw records, 8974 signature-verified)
+lock-record definition: board export lock frame OR live GET on the contract's derived deal room (roomFrameKinds-style probe) -- MIXED, matches earlier "39 locked" run
+payer definition: offer.from where offer.role === "payer"
+sampling: none -- every payer offer with >=1 verified accept in this window was evaluated (no --sample truncation)
+maturity filter: a payer is only included in the final split if >=1 of their candidate offers is >= 70 minutes past its earliest accept as of 2026-09-13T04:34:02.963Z (checked live, not window-end time)
+
+candidate offers total (accepted, schema-valid/lockable, NOT locked board+live): 2001
+  of which mature (>= maturity filter): 427
+  of which still too fresh to judge: 1574
+payers excluded for insufficient observation time (ALL their candidate offers are still fresh): 505
+distinct payer DIDs in the final split (mature only): 372
+
+1 位有 lock 紀錄／1 offers 對應／0 locked（此輪未鎖）-> 轉換率 0.0%   [這些 payer 在本視窗內有鎖過別的東西，只是這次沒鎖]
+371 位無 lock 紀錄／371 offers 對應／0 locked -> 0%
+(1 + 371 = 372 == 372 distinct payers, maturity-filtered)
+(505 additional payers excluded: not enough observation time yet -- see -insufficient-observation- file)
