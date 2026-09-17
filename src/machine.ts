@@ -93,6 +93,18 @@ function tclk1OfferIncludesRail(offered: readonly string[], selected: string): b
   });
 }
 
+// Same exact-then-canonical rule as tclk1OfferIncludesRail: a legacy/custom rail id compares
+// by exact spelling, a registered one compares by canonical form, and a failure to normalize
+// either side falls back to "not equal" rather than throwing out of applyFrame.
+function railIdsMatch(a: string, b: string): boolean {
+  if (a === b) return true;
+  try {
+    return normalizeRailId(a) === normalizeRailId(b);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Apply one frame at wall-clock `nowMs`. Clock and structural validation run first
  * (bad input is rejected, not thrown on); then the transition guards.
@@ -213,7 +225,7 @@ export function applyFrame(state: ContractState, frame: TclkFrame, nowMs: number
       if (frame.outcome !== state.status) {
         return reject(state, `receipt outcome ${frame.outcome} does not match ${state.status}`);
       }
-      if (frame.rail !== undefined && state.rail !== undefined && frame.rail !== state.rail) {
+      if (frame.rail !== undefined && state.rail !== undefined && !railIdsMatch(frame.rail, state.rail)) {
         return reject(state, `receipt rail ${frame.rail} does not match contract rail ${state.rail}`);
       }
       if (frame.ref !== undefined && state.railRef !== undefined && frame.ref !== state.railRef) {

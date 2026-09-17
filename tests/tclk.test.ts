@@ -280,6 +280,51 @@ describe("tclk state machine", () => {
     expect(contradictoryReceipt.state).toBe(claimed.state);
   });
 
+  it("accepts a receipt naming the canonical rail after lock named it by a registry alias", () => {
+    // lock accepts a rail's alias spelling (normalizeRailId resolves it against the
+    // offer, same as tclk1OfferIncludesRail does above); receipt naming the canonical
+    // spelling of that same rail must not be treated as a different rail.
+    const { lock, state } = accepted(baseOffer({ rails: ["paper", "x402"] }));
+
+    const locked = applyFrame(state, {
+      type: "lock", from: PAYER_DID, contract: state.contract!, rail: "paper-rail", ref: "escrow-7",
+    }, T0 + 1);
+    expect(locked.ok).toBe(true);
+    expect(locked.state.rail).toBe("paper-rail");
+
+    const claimed = applyFrame(locked.state, {
+      type: "reveal", from: PAYEE_DID, contract: state.contract!, ref: "escrow-7",
+      secret: lock.preimage,
+    }, T0 + 2);
+    expect(claimed.ok).toBe(true);
+
+    const receiptByAlias = applyFrame(claimed.state, {
+      type: "receipt", from: PAYER_DID, contract: state.contract!, outcome: "claimed",
+      rail: "paper-rail", ref: "escrow-7",
+    }, T0 + 3);
+    expect(receiptByAlias.ok).toBe(true);
+
+    const receiptByCanonical = applyFrame(claimed.state, {
+      type: "receipt", from: PAYER_DID, contract: state.contract!, outcome: "claimed",
+      rail: "paper", ref: "escrow-7",
+    }, T0 + 3);
+    expect(receiptByCanonical.ok).toBe(true);
+
+    const receiptByOtherAlias = applyFrame(claimed.state, {
+      type: "receipt", from: PAYER_DID, contract: state.contract!, outcome: "claimed",
+      rail: "paperrail", ref: "escrow-7",
+    }, T0 + 3);
+    expect(receiptByOtherAlias.ok).toBe(true);
+
+    // A genuinely different offered rail must still be rejected.
+    const receiptWrongRail = applyFrame(claimed.state, {
+      type: "receipt", from: PAYER_DID, contract: state.contract!, outcome: "claimed",
+      rail: "x402", ref: "escrow-7",
+    }, T0 + 3);
+    expect(receiptWrongRail.ok).toBe(false);
+    expect(receiptWrongRail.reason).toMatch(/receipt rail x402 does not match contract rail paper-rail/);
+  });
+
   it.each([
     ["NaN", Number.NaN],
     ["Infinity", Number.POSITIVE_INFINITY],
