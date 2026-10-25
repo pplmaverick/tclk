@@ -15,6 +15,12 @@
 import { isAddressEqual, type Address, type Hex, type PublicClient, type WalletClient, type Account, type Chain, type Transport } from "viem";
 import type { LockTerms, SettlementRail } from "./rail.js";
 
+/**
+ * ABI of contracts/EvmHashRail.sol as of the head of PR #21, commit
+ * d6477ac0aba7827a23bc77c72980dfc154c24e76.
+ * That contract is not in this repository, so nothing here checks the ABI against it;
+ * re-verify if the contract moves.
+ */
 export const EVM_HASH_RAIL_ABI = [
   {
     type: "function",

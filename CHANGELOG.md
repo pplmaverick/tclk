@@ -44,6 +44,10 @@ All notable changes to this project are documented here. Format follows
   encoding/decoding and revert-reason formatting, not a stubbed client. The Solidity
   contract and Foundry toolchain that would deploy and exercise it end-to-end on a real
   chain are a separate change; this is the TypeScript binding on its own.
+  The package is ESM-only and `viem` loads only via the `evm-hash-rail` subpath. The
+  address and asset lookups are the caller's trust boundary. The ABI mirrors
+  `contracts/EvmHashRail.sol` at PR #21 head `d6477ac0aba7827a23bc77c72980dfc154c24e76`;
+  this repository contains no Solidity. See the README.
 
 ### Changed
 
